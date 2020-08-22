@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import DjangoModelPermissions, IsAuthenticated, IsAdminUser
 from rest_framework.pagination import PageNumberPagination
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group, Permission
 from .modelSerializer import UserSerializer, UserInformationSerializer
 from user.models import UserInformation
 import datetime
@@ -126,18 +126,40 @@ class UserInformationView(APIView):
         return Response(status=200,
                         data={'code': 200, 'message': "User information already exists, no need to submit."})
 
-    def put(self,request):
+    def put(self, request):
         """
         修改用户信息
         :param request:
         :return:
         """
+        self.__userInformation=request.data
+        self.__username=self.__userInformation.get('username',None)
+        self.__user=UserInformation.objects.filter(username=self.__username)
+        if not self.__user:
+            return Response(status=200,data={'code':200,'message':'User information does not exist.'})
+        else:
+            serializer=UserInformationSerializer(data=self.__userInformation)
+            if serializer.is_valid():
+                serializer.update(self.__user,self.__userInformation)
+                return Response(status=200,data={'code':200,'message':"The user's information was updated successfully."})
+            return Response(status=200,data={'code':200,'message':"The data submitted did not meet the requirements."})
 
 
-    def delete(self,request):
+
+
+    def delete(self, request):
         """
         删除用户信息
         """
 
 
+class UserGroupPermissionView(APIView):
+    """
+    用户组及其权限管理视图
+    """
 
+
+class PermissionView(APIView):
+    """
+    系统权限管理
+    """
