@@ -76,6 +76,7 @@ class RegisterView(APIView):
         else:
             try:
                 newUser = User.objects.create_user(username=username, email=email, password=password)
+                UserInformation.objects.create(username=username)
                 # UserInformation.objects.create(username=username)
                 return Response(status=200, data={'code': 200, 'message': 'User registration succeeded.',
                                                   'newuser': newUser.username})
