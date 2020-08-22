@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer, Serializer
 from rest_framework import serializers
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group, Permission, Group
 from django.contrib.auth.hashers import make_password
 from datetime import datetime
 from user.models import UserInformation
@@ -47,4 +47,25 @@ class UserInformationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserInformation
+        fields = "__all__"
+
+
+
+class GroupSerializer(serializers.ModelSerializer):
+    """
+    用户组模型序列化
+    """
+
+    class Meta:
+        model = Group
+        fields = "__all__"
+
+
+class PermissionSerializer(serializers.ModelSerializer):
+    """
+    权限序列化
+    """
+
+    class Meta:
+        model = Permission
         fields = "__all__"

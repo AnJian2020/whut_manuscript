@@ -1,16 +1,14 @@
 import os
 from random import random
 from django.contrib.auth.hashers import make_password
-from django.shortcuts import render
 from django.contrib.auth.models import User, Permission
 from django.contrib.auth import login, logout, authenticate
 from django.utils.decorators import method_decorator
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authentication import TokenAuthentication, SessionAuthentication
-from rest_framework.permissions import DjangoModelPermissions, IsAuthenticated, AllowAny,DjangoObjectPermissions
+from rest_framework.permissions import DjangoModelPermissions, IsAuthenticated, AllowAny
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.decorators import api_view
 from .models import UserInformation, UserToken
 from django.views.decorators.csrf import csrf_exempt
 from .modelSerializer import UserInformationSerializer
