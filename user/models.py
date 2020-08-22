@@ -28,6 +28,10 @@ class UserInformation(models.Model):
         verbose_name = "用户信息表"
         verbose_name_plural = "用户信息表"
 
+        permissions=(
+
+        )
+
 class UserToken(Token):
     """
     继承Token模型。并添加token过期时间
