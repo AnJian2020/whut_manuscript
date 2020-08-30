@@ -3,7 +3,6 @@ from django.apps import AppConfig
 
 default_app_config = 'user.UserConfig'
 
-
 def getCurretnAppName(_file):
     return os.path.split(os.path.dirname(_file))[-1]
 
