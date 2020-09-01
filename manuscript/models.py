@@ -77,7 +77,7 @@ class ManuscriptModel(models.Model):
     trade = models.ManyToManyField(
         TradeModel,
         verbose_name=_("trade"))
-    memory_way = models.CharField(_("memory way"), max_length=256)
+    memory_way = models.CharField(_("memory way"), max_length=256,null=True,blank=True)
     contribution_time = models.DateTimeField(default=timezone.now(), verbose_name=_("delivery time"))
 
     def __str__(self):
@@ -99,6 +99,10 @@ class CheckManuscriptModel(models.Model):
     稿件检测模型
     """
     id = models.CharField(_("check id"), max_length=18, primary_key=True)
+    manuscript = models.OneToOneField(
+        ManuscriptModel,
+        on_delete=models.CASCADE,
+        verbose_name=_("manuscript"))
     check_name = models.CharField(_("check name"), max_length=150)
     check_contact_way = models.CharField(_("contact way"), max_length=64)
     duplicate_checking_rate = models.FloatField(_("duplicate checking rate"))
@@ -106,7 +110,7 @@ class CheckManuscriptModel(models.Model):
     is_subject = models.BooleanField(_("subject"))
     is_contribution = models.BooleanField(_("contribution"))
     is_trade = models.BooleanField(_("trade"))
-    check_result = models.CharField(_("check result"), max_length=256)
+    check_status = models.CharField(_("check status"), max_length=16)
     check_time = models.DateTimeField(_("check time"), default=timezone.now())
 
     def __str__(self):
@@ -121,8 +125,49 @@ class ReviewManuscriptModel(models.Model):
     """
     稿件审核模型
     """
-    id=models.CharField(_("review id"),max_length=18,primary_key=True)
+    id = models.CharField(_("review id"), max_length=18, primary_key=True)
+    manuscript = models.OneToOneField(
+        ManuscriptModel,
+        on_delete=models.CASCADE,
+        verbose_name=_("manuscript"))
+    # 初审
+    preliminary_status = models.CharField(_("preliminary status"), max_length=16, null=True, blank=True)
+    preliminary_evaluation = models.TextField(_("preliminary evaluation"), null=True, blank=True)
+    preliminary_user = models.CharField(_("preliminary user"), max_length=150, null=True, blank=True)
+    preliminary_user_contact_way = models.CharField(_('preliminary user contact way'), max_length=64, null=True,
+                                                    blank=True)
+    preliminary_time = models.DateTimeField(_("preliminary time"), null=True, blank=True)
+    preliminary_deadline = models.DateTimeField(_("preliminary deadline"), null=True, blank=True)
+    # 外审
+    # 外审只是参考，无法决定稿件是否通过，故暂时取消外审结果字段
+    # external_audit_status=models.CharField(_('external audit status'),max_length=16,null=True,blank=True)
+    external_audit_evaluation = models.TextField(_("external audit evaluation"), null=True, blank=True)
+    external_audit_user = models.CharField(_("external audit user"), max_length=150, null=True, blank=True)
+    external_audit_user_contact_way = models.CharField(_("external audit user contact way"), max_length=64, null=True,
+                                                       blank=True)
+    external_audit_time = models.DateTimeField(_("external audit time"), null=True, blank=True)
+    external_audit_deadline = models.DateTimeField(_("external audit deadline"), null=True, blank=True)
+    # 复审
+    review_status = models.CharField(_("review status"), max_length=16, null=True, blank=True)
+    review_evaluation = models.TextField(_("review evaluation"), null=True, blank=True)
+    review_user = models.CharField(_("review user"), max_length=150, null=True, blank=True)
+    review_user_contact_way = models.CharField(_("review user contact way"), max_length=64, null=True, blank=True)
+    review_time = models.DateTimeField(_("review time"), null=True, blank=True)
+    review_deadline = models.DateTimeField(_("review deadline"), null=True, blank=True)
+    # 终审
+    final_judgment_status = models.CharField(_("final judgment status"), max_length=16, null=True, blank=True)
+    final_judgment_evaluation = models.TextField(_("final judgment evaluation"), null=True, blank=True)
+    final_judgment_user = models.CharField(_("final judgment user"), max_length=150, null=True, blank=True)
+    final_judgment_user_contact_way = models.CharField(_("final judgment user contact way"), max_length=64, null=True,
+                                                       blank=True)
+    final_judgment_time = models.DateTimeField(_("final judgment time"), null=True, blank=True)
+    final_judgment_deadline = models.DateTimeField(_("final judgment deadline"), null=True, blank=True)
 
+    def __str__(self):
+        return self.id
 
+    class Meta:
+        verbose_name = _("review")
+        verbose_name_plural = _("review")
 
 

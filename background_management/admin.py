@@ -1,3 +1,6 @@
 from django.contrib import admin
 
-# Register your models here.
+
+#   background_management无数据模型，故无需将模型注册到管理界面
+
+
