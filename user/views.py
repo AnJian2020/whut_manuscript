@@ -76,10 +76,9 @@ class RegisterView(APIView):
                 newUser = User.objects.create_user(username=username, email=email, password=password)
                 UserInformation.objects.create(username=username)
                 # UserInformation.objects.create(username=username)
-                return Response(status=200, data={'code': 200, 'message': 'User registration succeeded.',
-                                                  'newuser': newUser.username})
+                return Response(status=200, data={'message': 'User registration succeeded.'})
             except:
-                return Response(status=200, data={'code': 404, 'message': 'User registration failed.'})
+                return Response(status=404, data={'message': 'User registration failed.'})
 
 
 class LogoutView(APIView):
@@ -91,7 +90,7 @@ class LogoutView(APIView):
 
     def put(self, request):
         logout(request)
-        return Response(status=200, data={'code': 200, 'message': "logout"})
+        return Response(status=200, data={'message': "logout"})
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -114,18 +113,18 @@ class ChangePassword(APIView):
                 content = content % code
                 user.email_user('密码修改', content)
                 return Response(status=200,
-                                data={'code': 200, 'message': 'The verification code was sent successfully.'})
+                                data={'message': 'The verification code was sent successfully.'})
             else:
                 if data['code'] and request.session.get('code', None) != data['code']:
-                    return Response(status=200, data={'code': 200, 'message': 'Verification code input error.'})
+                    return Response(status=204, data={'message': 'Verification code input error.'})
                 elif data['code'] and request.session.get('code', None) == data['code']:
                     newPassword = make_password(data['password'], None, 'pbkdf2_sha256')
                     user.password = newPassword
                     user.save()
                     del request.session['code']
-                    return Response(status=200, data={'code': 200, 'message': 'Password changed successfully.'})
+                    return Response(status=200, data={'message': 'Password changed successfully.'})
         else:
-            return Response(status=200, data={'code': 200, 'message': 'The user is not registered or unbound.'})
+            return Response(status=404, data={'message': 'The user is not registered or unbound.'})
 
 
 class PersonalInformationView(APIView):
@@ -134,8 +133,7 @@ class PersonalInformationView(APIView):
     """
 
     authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated, DjangoModelPermissions]
-    queryset = UserInformation.objects.all()
+    permission_classes = [IsAuthenticated]
 
     def put(self, request):
         """
@@ -146,15 +144,15 @@ class PersonalInformationView(APIView):
         userInformationData = request.data
         username = userInformationData['username']
         operation = UserInformation.objects.filter(username=username).first()
-        serializer = UserInformationSerializer(data=request.data)
-        if serializer.is_valid():
-            if operation:
-                serializer.update(operation, userInformationData)
-            else:
-                serializer.save()
-                # return Response(status=200,data={'message':'ok'})
+        serializer = UserInformationSerializer()
+
+        if operation:
+            serializer.update(operation, userInformationData)
             return Response(status=200, data={'message': 'Data updated successfully.'})
-        return Response(status=200, data={'message': 'Data update failed.'})
+        else:
+            # serializer.save()
+            # return Response(status=200,data={'message':'ok'})
+            return Response(status=200, data={'message': 'Data update failed.'})
 
     def get(self, request):
         """
@@ -162,7 +160,7 @@ class PersonalInformationView(APIView):
         :param request:
         :return:
         """
-        username = request.headers['username']
+        username = request.user
         user = UserInformation.objects.filter(username=username)
         if user:
             pageNumberPagination = PageNumberPagination()
@@ -170,5 +168,5 @@ class PersonalInformationView(APIView):
             serializer = UserInformationSerializer(instance=page, many=True)
             return Response(status=200, data=serializer.data)
         else:
-            return Response(status=200,
-                            data={'message': "This user information is not available.", 'username': username})
+            return Response(status=204,
+                            data={'message': "This user information is not available."})

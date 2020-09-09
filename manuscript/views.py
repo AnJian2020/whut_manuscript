@@ -221,7 +221,7 @@ class ManuscriptView(APIView):
         if nowUser.has_perm("manuscript.view_oneself_manuscript"):
             searchManuscript = request.data.get("title", None)
             userRealName = UserInformation.objects.filter(username=nowUser).first()
-            if searchManuscript is None:
+            if searchManuscript is None and userRealName:
                 userManuscript = ManuscriptModel.objects.filter(
                     Q(corresponding_author=userRealName.real_name) | Q(author=userRealName.real_name)).order_by(
                     "manuscript_id")

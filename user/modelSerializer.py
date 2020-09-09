@@ -1,8 +1,8 @@
 from .models import UserInformation
-from rest_framework.serializers import ModelSerializer
+from rest_framework import serializers
 
 
-class UserInformationSerializer(ModelSerializer):
+class UserInformationSerializer(serializers.ModelSerializer):
     """
     用户信息模型序列化
     """
