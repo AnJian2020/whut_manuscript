@@ -295,7 +295,7 @@ class ManuscriptDocumentView(APIView):
                     return Response(status=204, data={"message": "The file format does not meet the requirements."})
 
     def delete(self, request):
-        pass
+        return Response(status=200)
 
 
 class ManuscriptCheckView(APIView):
