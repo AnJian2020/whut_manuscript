@@ -23,7 +23,7 @@ class SubjectView(APIView):
     # 故无法通过为视图类添加装饰器实现，而单独为方法添加装饰器则会报错。
     def post(self, request):
         if request.user.has_perm("manuscript.add_subjectmodel"):
-            subjectName = request.data.get('name', None)
+            subjectName = request.data.get('subjectName', None)
             if subjectName:
                 subject = SubjectModel.objects.filter(name=subjectName)
                 if not subject:
@@ -39,10 +39,10 @@ class SubjectView(APIView):
 
     def delete(self, request):
         if request.user.has_perm("manuscript.delete_subjectmodel"):
-            subjectName = request.data.get("name", None)
+            subjectName = request.data.get("subjectName", None)
             if subjectName:
                 subject = SubjectModel.objects.filter(name=subjectName)
-                if not subject:
+                if subject:
                     subject.delete()
                     return Response(status=200, data={"message": "Data deleted successfully."})
                 return Response(status=403, data={"message": "Data does not exist."})
@@ -73,7 +73,7 @@ class ContributionTypeView(APIView):
     # 添加新的投稿类型
     def post(self, request):
         if request.user.has_perm("manuscript.add_contributiontypemodel"):
-            newContributionTypeName = request.data.get("name", None)
+            newContributionTypeName = request.data.get("contributionName", None)
             if newContributionTypeName:
                 contributionType = ContributionTypeModel.objects.filter(name=newContributionTypeName)
                 if contributionType:
@@ -89,7 +89,7 @@ class ContributionTypeView(APIView):
     # 删除投稿类型
     def delete(self, request):
         if request.user.has_perm("manuscript.delete_contributiontypemodel"):
-            contributionTypeName = request.data.get("name", None)
+            contributionTypeName = request.data.get("contributionName", None)
             if contributionTypeName:
                 contributionType = ContributionTypeModel.objects.filter(name=contributionTypeName)
                 if contributionType:
@@ -102,7 +102,7 @@ class ContributionTypeView(APIView):
 
     # 查看投稿类型
     def get(self, request):
-        allContributionType = ContributionTypeModel.objects.all()
+        allContributionType = ContributionTypeModel.objects.all().order_by("id")
         if allContributionType:
             pageNumberPagination = PageNumberPagination()
             page = pageNumberPagination.paginate_queryset(queryset=allContributionType, request=request, view=self)
@@ -125,7 +125,7 @@ class TradeView(APIView):
     # 添加新的行业领域
     def post(self, request):
         if request.user.has_perm("manuscript.add_trademodel"):
-            newTradeName = request.data.get("name")
+            newTradeName = request.data.get("tradeName")
             if newTradeName:
                 trade = TradeModel.objects.filter(name=newTradeName)
                 if trade:
@@ -141,7 +141,7 @@ class TradeView(APIView):
     # 删除行业领域
     def delete(self, request):
         if request.user.has_perm("manuscript.delete_trademodel"):
-            deleteTradeName = request.data.get("name", None)
+            deleteTradeName = request.data.get("tradeName", None)
             if deleteTradeName:
                 deleteTrade = TradeModel.objects.filter(name=deleteTradeName)
                 if deleteTrade:
@@ -154,7 +154,7 @@ class TradeView(APIView):
 
     # 查看系统现有的行业领域
     def get(self, request):
-        allTrade = TradeModel.objects.all()
+        allTrade = TradeModel.objects.all().order_by("id")
         if allTrade:
             pageNumberPagination = PageNumberPagination()
             page = pageNumberPagination.paginate_queryset(queryset=allTrade, request=request, view=self)
@@ -178,25 +178,29 @@ class ManuscriptView(APIView):
     def post(self, request):
         newManuscriptNeedDataField = ['title', 'author', 'abstract', 'textOfManuscript', 'reference',
                                       'corresponding_author',
-                                      'corresponding_author_contact_way', 'subject', 'contribution_type', 'trade',
-                                      'contribution_time']
+                                      'corresponding_author_contact_way', 'subject', 'contribution_type', 'trade']
         newManuscriptData = request.data
         for item in newManuscriptNeedDataField:
             if newManuscriptData.get(item) is None:
                 return Response(status=403, data={"message": "The data does not meet the requirements."})
+        # newManuscriptData['subject']=int(newManuscriptData['subject'])
+        # newManuscriptData['contribution_type']=int(newManuscriptData['contribution_type'])
+        # newManuscriptData['trade']=int(newManuscriptData['trade'])
         nowTime = datetime.now()
         # 稿件提交之时，系统就自动生成稿件编号、稿件审核编号、稿件检测编号
-        newManuscriptData['manuscript_id'] = "M" + str(nowTime.year) + str(nowTime.month) + str(nowTime.day) + str(
-            nowTime.hour) + str(nowTime.minute) + str(nowTime.second)
-        newManuscriptData['check_status']['id'] = "C" + str(nowTime.year) + str(nowTime.month) + str(nowTime.day) + str(
-            nowTime.hour) + str(nowTime.minute) + str(nowTime.second)
-        newManuscriptData['review_status']['id'] = "R" + str(nowTime.year) + str(nowTime.month) + str(
-            nowTime.day) + str(
-            nowTime.hour) + str(nowTime.minute) + str(nowTime.second)
+        newManuscriptData['check_status'] = {}
+        newManuscriptData['review_status'] = {}
+        newManuscriptData['manuscript_id'] = "M" + str(nowTime.year) + str(nowTime.month) + str(nowTime.day) + \
+                                             str(nowTime.hour) + str(nowTime.minute) + str(nowTime.second)
+        newManuscriptData['check_status']['check_id'] = "C" + str(nowTime.year) + str(nowTime.month) + str(nowTime.day) + \
+                                                  str(nowTime.hour) + str(nowTime.minute) + str(nowTime.second)
+        newManuscriptData['review_status']['review_id'] = "R" + str(nowTime.year) + str(nowTime.month) + str(nowTime.day) + \
+                                                   str(nowTime.hour) + str(nowTime.minute) + str(nowTime.second)
         serializer = ManuscriptSerializer(data=newManuscriptData)
         if serializer.is_valid():
             serializer.save()
             return Response(status=200, data={"message": "Data inserted successfully."})
+        print(serializer.errors)
         return Response(status=404, data={"message": "Data inserted failed."})
 
     def delete(self, request):

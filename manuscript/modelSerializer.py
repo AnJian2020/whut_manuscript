@@ -56,11 +56,13 @@ class ManuscriptSerializer(serializers.ModelSerializer):
     """
     稿件信息模型序列化
     """
-    check_status = CheckManuscriptSerializer()
+
     review_status = ReviewManuscriptSerializer()
+    check_status = CheckManuscriptSerializer()
+
 
     class Meta:
-        model = ReviewManuscriptModel
+        model = ManuscriptModel
         fields = "__all__"
 
     def create(self, validated_data):
@@ -69,23 +71,34 @@ class ManuscriptSerializer(serializers.ModelSerializer):
         :param validated_data:
         :return:
         """
+        newManuscriptData = validated_data
         check_status = validated_data.get("check_status", None)
         review_status = validated_data.get("review_status", None)
-        check_id = check_status.get("id", None)
-        review_id = review_status.get("id", None)
-        isCheck = CheckManuscriptModel.objects.filter(id=check_id).first()  #查看稿件审核记录表中是否存在有记录，没有则生成对应记录
-        isReview = ReviewManuscriptModel.objects.filter(id=review_id).first()
-        # nowTime = datetime.now()
+        check_id = check_status.get("check_id", None)
+        review_id = review_status.get("review_id", None)
+        isCheck = CheckManuscriptModel.objects.filter(check_id=check_id).first()  #查看稿件审核记录表中是否存在有记录，没有则生成对应记录
+        isReview = ReviewManuscriptModel.objects.filter(review_id=review_id).first()
         if not isCheck:
-            # newCheckID = "CH" + str(nowTime.year) + str(nowTime.month) + str(nowTime.day) + str(nowTime.hour) + str(
-            #     nowTime.minute) + str(nowTime.second)
             isCheck =CheckManuscriptModel.objects.create(**check_status)
         if not isReview:
             isReview=ReviewManuscriptModel.objects.create(**review_status)
-        newManuscriptData=validated_data
         newManuscriptData['check_status']=isCheck
         newManuscriptData['review_status']=isReview
-        return ManuscriptModel.objects.create(**newManuscriptData)
+
+        manyToManyData=dict()
+        manyToManyData['subject']=newManuscriptData['subject']
+        newManuscriptData.pop('subject')
+        manyToManyData['trade']=newManuscriptData['trade']
+        newManuscriptData.pop("trade")
+        manyToManyData['contribution_type']=newManuscriptData['contribution_type']
+        newManuscriptData.pop('contribution_type')
+        manuscript=ManuscriptModel.objects.create(**newManuscriptData)
+
+        manuscript.trade.set(manyToManyData['trade'])
+        manuscript.subject.set(manyToManyData['subject'])
+        manuscript.contribution_type.set(manyToManyData['contribution_type'])
+
+        return manuscript
 
     def update(self, instance, validated_data):
         """
@@ -96,10 +109,10 @@ class ManuscriptSerializer(serializers.ModelSerializer):
         """
         check_status = validated_data.get("check_status", None)
         review_status = validated_data.get("review_status", None)
-        check_id = check_status.get("id", None)
-        review_id = review_status.get("id", None)
-        isCheck = CheckManuscriptModel.objects.filter(id=check_id).first()  # 查看稿件审核记录表中是否存在有记录，没有则生成对应记录
-        isReview = ReviewManuscriptModel.objects.filter(id=review_id).first()
+        check_id = check_status.get("check_id", None)
+        review_id = review_status.get("review_id", None)
+        isCheck = CheckManuscriptModel.objects.filter(check_id=check_id).first()  # 查看稿件审核记录表中是否存在有记录，没有则生成对应记录
+        isReview = ReviewManuscriptModel.objects.filter(review_id=review_id).first()
         updateManuscriptData=validated_data
         if isCheck and isReview:
             isCheck.update(**check_status)
