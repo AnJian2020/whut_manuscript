@@ -1,4 +1,5 @@
-from .models import SubjectModel, ContributionTypeModel, TradeModel, ManuscriptModel
+from .models import SubjectModel, ContributionTypeModel, TradeModel, ManuscriptModel, CheckManuscriptModel, \
+    ReviewManuscriptModel
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication
@@ -242,6 +243,12 @@ class ManuscriptView(APIView):
         return Response(status=200, data={"dataLength": len(userManuscript), "userManuscript": serializer.data})
 
     def put(self, request):
+        """
+        用户稿件信息更改，如何稿件未进行检测或者审核，用户则可以对其进行修改，如何已进行检测或者审核，则无法进行
+        :param request:
+        :return:
+        """
+
         nowUser = request.user
         changeManuscript = request.data.get("title", None)
         if nowUser.has_perm("manuscript.change_oneself_manuscript"):
@@ -254,11 +261,13 @@ class ManuscriptView(APIView):
         else:
             return Response(status=404, data={"message": "You do not have permission to delete the data."})
         if manuscript:
-            serializer = ManuscriptSerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.update()
-                return Response(status=200, data={"message": "Data modified successfully."})
-            return Response(status=204, data={"message": "The data does not meet the requirements."})
+            serializer = ManuscriptSerializer()
+            # CheckManuscriptModel.objects.filter(check_id=request.data['check_status']['check_id']).delete()
+            # ReviewManuscriptModel.objects.filter(review_id=request.data['review_status']['review_id']).delete()
+
+            serializer.update(manuscript,request.data)
+            return Response(status=200, data={"message": "Data modified successfully."})
+            return Response(status=204, data={"message": "The data does not meet the requirements.","errors":serializer.errors})
         else:
             return Response(status=404, data={"message": "The modified data does not exist."})
 
