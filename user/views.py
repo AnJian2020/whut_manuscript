@@ -48,11 +48,11 @@ class LoginView(APIView):
                 UserToken.objects.create(user_id=user_id)
                 token = UserToken.objects.filter(user_id=user_id)[0].key
                 return Response(status=200,
-                                data={'code': 200, 'message': 'success', 'token': token, 'username': username})
+                                data={'token': token, 'username': username})
             else:
-                return Response(status=200, data={'code': 404, 'message': 'Wrong user name or password.'})
+                return Response(status=204, data={'message': 'Wrong password.'})
         else:
-            return Response(status=200, data={'code': 404, 'message': "Wrong user name or password."})
+            return Response(status=204, data={'message': "Wrong user name or password."})
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -70,7 +70,7 @@ class RegisterView(APIView):
         password = data['password']
         user = User.objects.filter(username=username)
         if user:
-            return Response(status=200, data={'code': 404, 'message': "User is already registered."})
+            return Response(status=204, data={'message': "User is already registered."})
         else:
             try:
                 newUser = User.objects.create_user(username=username, email=email, password=password)
@@ -89,6 +89,10 @@ class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request):
+        user_id=User.objects.filter(username=request.user).first().id
+        user_token=UserToken.objects.filter(user_id=user_id)
+        if user_token:
+            user_token.delete()
         logout(request)
         return Response(status=200, data={'message': "logout"})
 

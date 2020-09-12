@@ -60,7 +60,7 @@ class CheckManuscriptModel(models.Model):
     """
     稿件检测模型
     """
-    id = models.CharField(_("check id"), max_length=18, primary_key=True)
+    check_id = models.CharField(_("check id"), max_length=18, primary_key=True)
     # manuscript = models.OneToOneField(
     #     ManuscriptModel,
     #     on_delete=models.CASCADE,
@@ -77,7 +77,7 @@ class CheckManuscriptModel(models.Model):
     check_time = models.DateTimeField(_("check time"), default=timezone.now, blank=True, null=True)
 
     def __str__(self):
-        return self.id
+        return self.check_id
 
     class Meta:
         verbose_name = _("check")
@@ -88,7 +88,7 @@ class ReviewManuscriptModel(models.Model):
     """
     稿件审核模型
     """
-    id = models.CharField(_("review id"), max_length=18, primary_key=True)
+    review_id = models.CharField(_("review id"), max_length=18, primary_key=True)
     # manuscript = models.OneToOneField(
     #     ManuscriptModel,
     #     on_delete=models.CASCADE,
@@ -127,7 +127,7 @@ class ReviewManuscriptModel(models.Model):
     final_judgment_deadline = models.DateTimeField(_("final judgment deadline"), null=True, blank=True)
 
     def __str__(self):
-        return self.id
+        return self.review_id
 
     class Meta:
         verbose_name = _("review")

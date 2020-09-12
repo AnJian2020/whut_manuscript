@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'user',
     'background_management',
     'manuscript',
@@ -45,13 +46,13 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.locale.LocaleMiddleware',
-
 ]
 
 ROOT_URLCONF = 'NEWS_Manage.urls'
@@ -80,13 +81,17 @@ WSGI_APPLICATION = 'NEWS_Manage.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'news_manage',
-        'USER': 'xuhao',
-        'PASSWORD': '2016wangmin.',
-        'HOST': '39.96.70.180',
-        'PORT': '3306',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'sqlite3')
     }
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.mysql',
+    #     'NAME': 'news_manage',
+    #     'USER': 'xuhao',
+    #     'PASSWORD': '2016wangmin.',
+    #     'HOST': '39.96.70.180',
+    #     'PORT': '3306',
+    # }
 }
 
 # Password validation
@@ -136,6 +141,20 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication', ],
     'DEFAULT_PERMISSION_CLASSES': ('rest_framework.permissions.IsAuthenticated',),
 }
+
+# 设置跨域
+CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_ALLOW_ALL = True
+# CORS_ORIGIN_WHITELIST = ("*")
+CORS_ALLOW_METHODS = ('DELETE', 'GET', 'POST', 'PUT')
+CORS_ALLOW_HEADERS=(
+    'XMLHttpRequest',
+    'X_FILENAME',
+    'accept-encoding',
+    'Authorization',
+    'user-agent'
+)
+
 
 # 邮件配置信息
 EMAIL_USE_SSL = True

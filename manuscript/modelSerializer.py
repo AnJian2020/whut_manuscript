@@ -56,11 +56,13 @@ class ManuscriptSerializer(serializers.ModelSerializer):
     """
     稿件信息模型序列化
     """
-    check_status = CheckManuscriptSerializer()
+
     review_status = ReviewManuscriptSerializer()
+    check_status = CheckManuscriptSerializer()
+
 
     class Meta:
-        model = ReviewManuscriptModel
+        model = ManuscriptModel
         fields = "__all__"
 
     def create(self, validated_data):
@@ -69,12 +71,13 @@ class ManuscriptSerializer(serializers.ModelSerializer):
         :param validated_data:
         :return:
         """
+        newManuscriptData = validated_data
         check_status = validated_data.get("check_status", None)
         review_status = validated_data.get("review_status", None)
-        check_id = check_status.get("id", None)
-        review_id = review_status.get("id", None)
-        isCheck = CheckManuscriptModel.objects.filter(id=check_id).first()  #查看稿件审核记录表中是否存在有记录，没有则生成对应记录
-        isReview = ReviewManuscriptModel.objects.filter(id=review_id).first()
+        check_id = check_status.get("check_id", None)
+        review_id = review_status.get("review_id", None)
+        isCheck = CheckManuscriptModel.objects.filter(check_id=check_id).first()  #查看稿件审核记录表中是否存在有记录，没有则生成对应记录
+        isReview = ReviewManuscriptModel.objects.filter(review_id=review_id).first()
         # nowTime = datetime.now()
         if not isCheck:
             # newCheckID = "CH" + str(nowTime.year) + str(nowTime.month) + str(nowTime.day) + str(nowTime.hour) + str(
@@ -82,42 +85,76 @@ class ManuscriptSerializer(serializers.ModelSerializer):
             isCheck =CheckManuscriptModel.objects.create(**check_status)
         if not isReview:
             isReview=ReviewManuscriptModel.objects.create(**review_status)
-        newManuscriptData=validated_data
         newManuscriptData['check_status']=isCheck
         newManuscriptData['review_status']=isReview
-        return ManuscriptModel.objects.create(**newManuscriptData)
+        manyToManyData=dict()
+        manyToManyData['subject']=newManuscriptData['subject']
+        newManuscriptData.pop('subject')
+        manyToManyData['trade']=newManuscriptData['trade']
+        newManuscriptData.pop("trade")
+        manyToManyData['contribution_type']=newManuscriptData['contribution_type']
+        newManuscriptData.pop('contribution_type')
+        manuscript=ManuscriptModel.objects.create(**newManuscriptData)
+        manuscript.trade.set(manyToManyData['trade'])
+        manuscript.subject.set(manyToManyData['subject'])
+        manuscript.contribution_type.set(manyToManyData['contribution_type'])
+        return manuscript
 
     def update(self, instance, validated_data):
         """
-        更新稿件信息
+        更新稿件信息，多对多数据只能进行添加和删除，不能进行修改，只有非关系字段或者外键可以进行更新
         :param instance:
         :param validated_data:
         :return:
         """
-        check_status = validated_data.get("check_status", None)
-        review_status = validated_data.get("review_status", None)
-        check_id = check_status.get("id", None)
-        review_id = review_status.get("id", None)
-        isCheck = CheckManuscriptModel.objects.filter(id=check_id).first()  # 查看稿件审核记录表中是否存在有记录，没有则生成对应记录
-        isReview = ReviewManuscriptModel.objects.filter(id=review_id).first()
-        updateManuscriptData=validated_data
-        if isCheck and isReview:
-            isCheck.update(**check_status)
-            isReview.update(**review_status)
-            manuscript_id=validated_data.get("manuscript_id",None)
-            updateManuscriptData['check_status']=isCheck
-            updateManuscriptData['review_status']=isReview
-            return ManuscriptModel.objects.filter(manuscript_id=manuscript_id).update(**updateManuscriptData)
-        elif not isCheck and isReview:
-            isReview.update(**review_status)
-            manuscript_id = validated_data.get("manuscript_id", None)
-            updateManuscriptData['review_status'] = isReview
-            return ManuscriptModel.objects.filter(manuscript_id=manuscript_id).update(**updateManuscriptData)
-        elif isCheck and not isReview:
-            isCheck.update(**check_status)
-            manuscript_id = validated_data.get("manuscript_id", None)
-            updateManuscriptData['check_status']=isCheck
-            return ManuscriptModel.objects.filter(manuscript_id=manuscript_id).update(**updateManuscriptData)
+        newManuscriptData=validated_data
+        manyToManyData = dict()
+        oneToOneData=dict()
+        oneToOneData['check_status'] = newManuscriptData['check_status']
+        newManuscriptData.pop('check_status')
+        oneToOneData['review_status'] = newManuscriptData['review_status']
+        newManuscriptData.pop("review_status")
+        manyToManyData['subject'] = newManuscriptData['subject']
+        newManuscriptData.pop('subject')
+        manyToManyData['trade'] = newManuscriptData['trade']
+        newManuscriptData.pop("trade")
+        manyToManyData['contribution_type'] = newManuscriptData['contribution_type']
+        newManuscriptData.pop('contribution_type')
 
+        manuscript_id = validated_data.get("manuscript_id", None)
+        manuscript=ManuscriptModel.objects.filter(manuscript_id=manuscript_id)
+        manuscript.update(**newManuscriptData)
 
+        manuscript[0].trade.set(manyToManyData['trade'])
+        manuscript[0].subject.set(manyToManyData['subject'])
+        manuscript[0].contribution_type.set(manyToManyData['contribution_type'])
+
+        return manuscript
+
+        # check_status = validated_data.get("check_status", None)
+        # review_status = validated_data.get("review_status", None)
+        # check_id = check_status.get("check_id", None)
+        # review_id = review_status.get("review_id", None)
+        # isCheck = CheckManuscriptModel.objects.filter(check_id=check_id)  # 查看稿件审核记录表中是否存在有记录，没有则生成对应记录
+        # isReview = ReviewManuscriptModel.objects.filter(review_id=review_id)
+        # # updateManuscriptData=validated_data
+        # if isCheck and isReview:
+        #     # isCheck.update(**check_status)
+        #     # isReview.update(**review_status)
+        #     manuscript_id=validated_data.get("manuscript_id",None)
+        #     # updateManuscriptData['check_status']=isCheck
+        #     # updateManuscriptData['review_status']=isReview
+        #     return ManuscriptModel.objects.filter(manuscript_id=manuscript_id).update(**newManuscriptData)
+        # elif not isCheck and isReview:
+        #     isReview.update(**review_status)
+        #     manuscript_id = validated_data.get("manuscript_id", None)
+        #     updateManuscriptData['review_status'] = isReview
+        #     return ManuscriptModel.objects.filter(manuscript_id=manuscript_id).update(**updateManuscriptData)
+        # elif isCheck and not isReview:
+        #     isCheck.update(**check_status)
+        #     manuscript_id = validated_data.get("manuscript_id", None)
+        #     updateManuscriptData['check_status']=isCheck
+        #     return ManuscriptModel.objects.filter(manuscript_id=manuscript_id).update(**updateManuscriptData)
+        #
+        #
 
