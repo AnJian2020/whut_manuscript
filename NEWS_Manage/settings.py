@@ -156,6 +156,8 @@ CORS_ALLOW_HEADERS=(
 )
 
 
+
+
 # 邮件配置信息
 EMAIL_USE_SSL = True
 # 邮件服务器

@@ -201,7 +201,6 @@ class ManuscriptView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(status=200, data={"message": "Data inserted successfully."})
-        print(serializer.errors)
         return Response(status=404, data={"message": "Data inserted failed."})
 
     def delete(self, request):
@@ -227,14 +226,11 @@ class ManuscriptView(APIView):
             searchManuscript = request.data.get("title", None)
             userRealName = UserInformation.objects.filter(username=nowUser).first()
             if searchManuscript is None and userRealName:
-                userManuscript = ManuscriptModel.objects.filter(
-                    Q(corresponding_author=userRealName.real_name) | Q(author=userRealName.real_name)).order_by(
-                    "manuscript_id")
+                userManuscript = ManuscriptModel.objects.filter(Q(corresponding_author=userRealName.real_name) |
+                                                                Q(author=userRealName.real_name)).order_by("manuscript_id")
             else:
-                userManuscript = ManuscriptModel.objects.filter(
-                    Q(corresponding_author=userRealName.real_name) | Q(author=userRealName.real_name),
-                    Q(title=searchManuscript) | Q(subject=searchManuscript) | Q(trade=searchManuscript)).order_by(
-                    "manuscript_id")
+                userManuscript = ManuscriptModel.objects.filter(Q(corresponding_author=userRealName.real_name) |
+                                                                Q(author=userRealName.real_name),title=searchManuscript).order_by("manuscript_id")
         elif nowUser.has_perm("manuscript.view_manuscriptmodel"):
             userManuscript = ManuscriptModel.objects.all().order_by("manuscript_id")
         pageNumberPagination = PageNumberPagination()
@@ -261,13 +257,11 @@ class ManuscriptView(APIView):
         else:
             return Response(status=404, data={"message": "You do not have permission to delete the data."})
         if manuscript:
-            serializer = ManuscriptSerializer()
-            # CheckManuscriptModel.objects.filter(check_id=request.data['check_status']['check_id']).delete()
-            # ReviewManuscriptModel.objects.filter(review_id=request.data['review_status']['review_id']).delete()
-
+            serializer = ManuscriptSerializer(data=request.data)
+            # if serializer.is_valid():
             serializer.update(manuscript,request.data)
             return Response(status=200, data={"message": "Data modified successfully."})
-            return Response(status=204, data={"message": "The data does not meet the requirements.","errors":serializer.errors})
+            # return Response(status=204, data={"message": "The data does not meet the requirements.","errors":serializer.errors})
         else:
             return Response(status=404, data={"message": "The modified data does not exist."})
 
@@ -283,6 +277,12 @@ class ManuscriptDocumentView(APIView):
     documentPath = os.path.join(os.getcwd(), 'document')
 
     def post(self, request):
+        """
+        稿件文件上传
+        :param request:
+        :return:
+        """
+        userRealName=UserInformation.objects.filter(username=request.user).first().real_name
         fileDict = request.FILES
         for key, value in fileDict.items():
             fileData = request.FILES.getlist(key)
@@ -292,7 +292,8 @@ class ManuscriptDocumentView(APIView):
                 if re.search(".pdf", filename) is None and re.search(".docx", filename) is None:
                     return Response(status=404, data={"message": "The file format does not meet the requirements."})
                 if manuscriptTitle:
-                    manuscript = ManuscriptModel.objects.filter(title=manuscriptTitle)
+                    manuscript = ManuscriptModel.objects.filter(Q(author=userRealName)|Q(corresponding_author=userRealName),
+                                                                title=manuscriptTitle)
                     if manuscript:
                         # 文件上传
                         f = open(os.path.join(self.documentPath, filename), 'wb+')
@@ -301,11 +302,20 @@ class ManuscriptDocumentView(APIView):
                         f.close()
                         newManuscriptPath = os.path.join(self.documentPath, filename)
                         manuscript.update(memory_way=newManuscriptPath)
-                        return Response(status=200, data={"message": "The file was uploaded successfully."})
-                    return Response(status=204, data={
-                        "message": "Failed to upload the manuscript, the information is not perfect, please upload again after improving the manuscript information."})
+                    else:
+                        return Response(status=204, data={
+                            "message": "Failed to upload the manuscript, the information is not perfect, please upload again after improving the manuscript information."})
                 else:
                     return Response(status=204, data={"message": "The file format does not meet the requirements."})
+        return Response(status=200, data={"message": "The file was uploaded successfully."})
+
+    def get(self,request):
+        """
+        稿件下载
+        :param request:
+        :return:
+        """
+        
 
     def delete(self, request):
         return Response(status=200)
