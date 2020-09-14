@@ -102,18 +102,21 @@ class ManuscriptSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """
-        更新稿件信息，多对多数据只能进行添加和删除，不能进行修改，只有非关系字段或者外键可以进行更新
+        更新稿件信息，多对多数据只能进行添加和删除，不能进行修改，只有非关系字段或者外键可以进行更新.
+        用户修改稿件信息，只能修改稿件的作者，内容等，不能修改稿件的检测与审核信息
         :param instance:
         :param validated_data:
         :return:
         """
         newManuscriptData=validated_data
         manyToManyData = dict()
-        oneToOneData=dict()
-        oneToOneData['check_status'] = newManuscriptData['check_status']
-        newManuscriptData.pop('check_status')
-        oneToOneData['review_status'] = newManuscriptData['review_status']
-        newManuscriptData.pop("review_status")
+
+        # oneToOneData=dict()
+        # oneToOneData['check_status'] = newManuscriptData['check_status']
+        # newManuscriptData.pop('check_status')
+        # oneToOneData['review_status'] = newManuscriptData['review_status']
+        # newManuscriptData.pop("review_status")
+
         manyToManyData['subject'] = newManuscriptData['subject']
         newManuscriptData.pop('subject')
         manyToManyData['trade'] = newManuscriptData['trade']
@@ -123,7 +126,7 @@ class ManuscriptSerializer(serializers.ModelSerializer):
 
         manuscript_id = validated_data.get("manuscript_id", None)
         manuscript=ManuscriptModel.objects.filter(manuscript_id=manuscript_id)
-        manuscript.update(**newManuscriptData)
+        manuscript.update(**validated_data)
 
         manuscript[0].trade.set(manyToManyData['trade'])
         manuscript[0].subject.set(manyToManyData['subject'])
