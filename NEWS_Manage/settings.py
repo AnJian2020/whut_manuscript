@@ -155,8 +155,9 @@ CORS_ALLOW_HEADERS=(
     'user-agent'
 )
 
-
-
+import logging
+LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+logging.basicConfig(filename='whut.log', level=logging.DEBUG, format=LOG_FORMAT)
 
 # 邮件配置信息
 EMAIL_USE_SSL = True

@@ -1,3 +1,6 @@
+from django.http import FileResponse
+import threading
+from multiprocessing import Process
 from .models import SubjectModel, ContributionTypeModel, TradeModel, ManuscriptModel, CheckManuscriptModel, \
     ReviewManuscriptModel
 from rest_framework.views import APIView
@@ -13,9 +16,18 @@ from .modelSerializer import SubjectSerializer, ContributionTypeSerializer, Trad
 from datetime import datetime
 import os
 import re
+import logging
 
+def recordOperationStatus(operation):
+    def recode(func):
+        def wrapper(*args,**kwargs):
+            logging.info(operation)
+            return func(*args,**kwargs)
+        return wrapper
+    return recode
 
 class SubjectView(APIView):
+
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -276,6 +288,7 @@ class ManuscriptDocumentView(APIView):
 
     documentPath = os.path.join(os.getcwd(), 'document')
 
+    @recordOperationStatus("用户稿件上传")
     def post(self, request):
         """
         稿件文件上传
@@ -315,11 +328,43 @@ class ManuscriptDocumentView(APIView):
         :param request:
         :return:
         """
-        
+        username=request.user
+        downloadManuscriptId = request.data.get("manuscript_id")
+        if username.has_perm("manuscript.view_oneself_manuscript"):
+            userRealName=UserInformation.objects.filter(username=username).first().real_name
+
+            manuscript=ManuscriptModel.objects.filter(Q(corresponding_author=userRealName)|Q(author=userRealName),
+                                                      manuscript_id=downloadManuscriptId).first()
+
+        elif username.has_perm("manuscript.view_manuscriptmodel"):
+            manuscript=ManuscriptModel.objects.filter(manuscript_id=downloadManuscriptId).first()
+        if manuscript and manuscript.memory_way:
+            try:
+                manuscriptFile=open(manuscript.memory_way,'rb')
+                result=FileResponse(manuscriptFile,as_attachment=True)
+                return result
+            except Exception as error:
+                logging.error("error:".format(error))
+                return Response(status=404,data={"message":"文件下载错误！"})
+        else:
+            return Response(status=404,data={"message":"文件未上传或者稿件未投递！"})
 
     def delete(self, request):
-        return Response(status=200)
-
+        username=request.user
+        deleteManuscriptId=request.data.get('manuscript_id',None)
+        if username.has_perm("manuscript.delete_oneself_manuscript"):
+            userRealName=UserInformation.objects.filter(username=username).first().real_name
+            manuscript=ManuscriptModel.objects.filter(Q(author=userRealName)|Q(corresponding_author=userRealName),
+                                                      manuscript_id=deleteManuscriptId).first()
+        elif username.has_perm("manuscript.delete_manuscriptModel"):
+            manuscript = ManuscriptModel.objects.filter(manuscript_id=deleteManuscriptId).first()
+        else:
+            return Response(status=404, data={"message": "用户无权限进行此项操作。"})
+        if manuscript and manuscript.memory_way:
+            if os.path.exists(manuscript.memory_way):
+                os.remove(manuscript.memory_way)
+                return Response(status=200,data={"message":"文件删除成功。"})
+        return Response(status=204,data={"message":"文件不存在。"})
 
 class ManuscriptCheckView(APIView):
     """
