@@ -11,4 +11,5 @@ urlpatterns=[
     path("trade",TradeView.as_view(),name="trade"),
     path("manuscript",ManuscriptView.as_view(),name="manuscript"),
     path("document",ManuscriptDocumentView.as_view(),name="document"),
+    path("check",ManuscriptCheckView.as_view(),name='check')
 ]

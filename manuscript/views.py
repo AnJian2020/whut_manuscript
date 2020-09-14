@@ -1,6 +1,6 @@
 from django.http import FileResponse
-import threading
-from multiprocessing import Process
+# import threading
+# from multiprocessing import Process
 from .models import SubjectModel, ContributionTypeModel, TradeModel, ManuscriptModel, CheckManuscriptModel, \
     ReviewManuscriptModel
 from rest_framework.views import APIView
@@ -12,11 +12,13 @@ from user.models import UserInformation
 # from django.utils.decorators import method_decorator
 # from django.contrib.auth.decorators import permission_required
 from django.db.models import Q
-from .modelSerializer import SubjectSerializer, ContributionTypeSerializer, TradeSerializer, ManuscriptSerializer
+from .modelSerializer import SubjectSerializer, ContributionTypeSerializer, TradeSerializer, ManuscriptSerializer, \
+    CheckManuscriptSerializer
 from datetime import datetime
 import os
 import re
 import logging
+from enum import Enum,unique
 
 def recordOperationStatus(operation):
     def recode(func):
@@ -25,6 +27,7 @@ def recordOperationStatus(operation):
             return func(*args,**kwargs)
         return wrapper
     return recode
+
 
 class SubjectView(APIView):
 
@@ -194,11 +197,8 @@ class ManuscriptView(APIView):
                                       'corresponding_author_contact_way', 'subject', 'contribution_type', 'trade']
         newManuscriptData = request.data
         for item in newManuscriptNeedDataField:
-            if newManuscriptData.get(item) is None:
+            if newManuscriptData.get(item,None) is None:
                 return Response(status=403, data={"message": "The data does not meet the requirements."})
-        # newManuscriptData['subject']=int(newManuscriptData['subject'])
-        # newManuscriptData['contribution_type']=int(newManuscriptData['contribution_type'])
-        # newManuscriptData['trade']=int(newManuscriptData['trade'])
         nowTime = datetime.now()
         # 稿件提交之时，系统就自动生成稿件编号、稿件审核编号、稿件检测编号
         newManuscriptData['check_status'] = {}
@@ -371,8 +371,102 @@ class ManuscriptCheckView(APIView):
     稿件检测视图
     """
 
+    authentication_classes=[TokenAuthentication]
+    permission_classes=[IsAuthenticated]
+
+    def post(self,request):
+        return Response(status=404,data={"message":"因系统安全原因，故系统不支持稿件检测记录的创建。"})
+
+    def put(self,request):
+        username=request.user
+        MANUSCRIPTCHECKNEEDDATE=['check_id','duplicate_checking_rate','multiple_contributions_to_one_manuscript','is_subject',
+                                 'is_contribution','is_trade','check_status']
+        if username.has_perm("manuscript.change_checkmanuscriptmodel"):
+            checkManuscript=request.data
+            for item in MANUSCRIPTCHECKNEEDDATE:
+                if checkManuscript.get(item,None) is None:
+                    return Response(status=204,data={"message":"稿件检测信息不全，请检测项目是否全部进行！"})
+            check_id=checkManuscript.get('check_id',None)
+            checkRecord=CheckManuscriptModel.objects.filter(check_id=check_id).first()
+            if checkRecord:
+
+                def getDefaultCheckUserInformation(username):
+                    """
+                    设置检测的部分信息
+                    :param username:
+                    :return:
+                    """
+                    user=UserInformation.objects.filter(username=username).first()
+                    checkManuscript['check_name']=user.real_name
+                    checkManuscript['check_contact_way']=user.contact_way
+                    checkManuscript['check_time']=datetime.now()
+                    return checkManuscript
+
+                getDefaultCheckUserInformation(username)
+                serializer=CheckManuscriptSerializer(date=checkManuscript)
+                if serializer.is_valid():
+                    serializer.update(checkRecord,checkManuscript)
+                    return Response(status=200,data={"message":"稿件检测信息更新成功。"})
+                else:
+                    return Response(status=200,data={"message":"稿件检测数据不符合要求。"})
+            else:
+                return Response(status=204,data={"message":"稿件记录不存在。"})
+        else:
+            return Response(status=404,data={"message":"您无权进行此项操作！"})
+
+
+    def get(self,request):
+        username=request.user
+        if username.has_perm("manuscript.view_checkmanuscriptmodel"):
+            selectManuscriptCheckStatus=request.data.get('manuscript_check_status',None)
+            user = UserInformation.objects.filter(username=username).first()
+            if selectManuscriptCheckStatus=="check":
+                allCheckManuscriptRecord=CheckManuscriptModel.objects.extra(where=['check_name=%s and check_status NOT IS NULL'],
+                                                                            params=[user.real_name]).order_by("check_id")
+            elif selectManuscriptCheckStatus=='nocheck':
+                # 用SQL语句来实现
+                # allCheckManuscriptRecord=CheckManuscriptModel.objects.filter(check_name=
+                allCheckManuscriptRecord=CheckManuscriptModel.objects.extra(where=['check_name=%s and check_status IS NULL'],
+                                                                            params=[user.real_name]).order_by("check_id")
+            else:
+                allCheckManuscriptRecord=CheckManuscriptModel.objects.filter(check_name=user.real_name).order_by('check_id')
+            pageNumberPagination=PageNumberPagination()
+            page=pageNumberPagination.paginate_queryset(queryset=allCheckManuscriptRecord,request=request,view=self)
+            checkManuscriptSerializer=CheckManuscriptSerializer(instance=page,many=True)
+            return Response(status=200,data={"allData":len(allCheckManuscriptRecord),
+                                             "checkManuscript":checkManuscriptSerializer.data})
+        return Response(status=404,data={"message":"您无权查看！"})
+
+
+    def delete(self,request):
+        return Response(status=404,data={"message":"因系统安全原因，故系统不支持稿件检测记录的删除。"})
+
+class ManuscriptAssginCheck(APIView):
+    """
+    一键分配稿件评审专家
+    """
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self,request):
+        pass
+
 
 class ManuscriptReviewView(APIView):
     """
     稿件的审核，包括初审、外审、复审和终审
     """
+
+    reviewStatus=Enum("reviewStatus",('preliminary','external_audit','review','final_judgment'))
+
+    def post(self,request):
+        pass
+
+    def put(self,request):
+        pass
+
+    def get(self,request):
+        pass
+
+    def delete(self,request):
+        pass

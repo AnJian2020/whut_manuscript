@@ -182,3 +182,13 @@ class ManuscriptModel(models.Model):
             ('delete_oneself_manuscript', 'Can delete oneself manuscript'),
             ('view_oneself_manuscript', 'Can view oneself manuscript')
         )
+
+# class JournalStaff(models.Model):
+#     """
+#     期刊工作人员
+#     """
+#
+#     username=models.CharField(_("username"),max_length=150,primary_key=True)
+#
+#     class Meta:
+
