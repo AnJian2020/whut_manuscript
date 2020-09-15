@@ -443,24 +443,28 @@ class ManuscriptCheckView(APIView):
 
 class ManuscriptAssginCheck(APIView):
     """
-    一键分配稿件评审专家
+    一键分配稿件评审专家，功能暂时未实现
     """
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self,request):
-        pass
+        return Response(status=200,data={"message":"功能还未实现。"})
 
 
 class ManuscriptReviewView(APIView):
+
     """
     稿件的审核，包括初审、外审、复审和终审
     """
 
+    authentication_classes=[TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
     reviewStatus=Enum("reviewStatus",('preliminary','external_audit','review','final_judgment'))
 
     def post(self,request):
-        pass
+        return Response(status=200,data={"message":"系统不支持用户自行创建审核记录。"})
 
     def put(self,request):
         pass
@@ -468,5 +472,6 @@ class ManuscriptReviewView(APIView):
     def get(self,request):
         pass
 
+
     def delete(self,request):
-        pass
+        return Response(status=200,data={"message":"系统不支持用户自行删除审核记录。"})

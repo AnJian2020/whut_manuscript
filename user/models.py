@@ -1,7 +1,7 @@
 from django.db import models
 from rest_framework.authtoken.models import Token
 from datetime import datetime,timedelta
-from NEWS_Manage.settings import *
+from whut_manuscript.settings import *
 
 class UserInformation(models.Model):
     """
